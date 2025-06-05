@@ -18,9 +18,9 @@ void Button::modifyText(const std::string& newText) {
 }
 
 void Button::update() {
-    SDL_SetRenderDrawColor(this->renderer, 55, 155, 155, SDL_ALPHA_OPAQUE);  /* white, full alpha */
+    SDL_SetRenderDrawColor(this->renderer, 55, 255, 255, SDL_ALPHA_OPAQUE);  /* white, full alpha */
     SDL_RenderFillRect(this->renderer, &this->background);
-    SDL_SetRenderDrawColor(this->renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  /* green, full alpha */
+    SDL_SetRenderDrawColor(this->renderer, 255, 0, 0, SDL_ALPHA_OPAQUE);  /* red, full alpha */
     SDL_RenderDebugText(this->renderer, (float)((this->background.w - (SDL_DEBUG_TEXT_FONT_CHARACTER_SIZE * this->text.length())) / 2 + this->background.x),
         (float)(this->background.h / 2 + this->background.y - 3), this->text.c_str());
 }
