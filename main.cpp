@@ -12,6 +12,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include "lib/button.h"
+#include "lib/image_show.h"
 
 /* We will use this renderer to draw into this window every frame. */
 static SDL_Window *window = NULL;
@@ -21,8 +22,10 @@ static Button *exitButton = NULL;
 static Button *backButton = NULL;
 static uint16_t frameCount = 0;
 
-#define WINDOW_WIDTH 900
-#define WINDOW_HEIGHT 600
+#define WINDOW_WIDTH 1920
+#define WINDOW_HEIGHT 1080
+
+static ImageShow* frame0Background = NULL;
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
@@ -39,12 +42,15 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
         return SDL_APP_FAILURE;
     }
 
-    SDL_FRect startButtonRect = {(WINDOW_WIDTH - 100) / 2, WINDOW_HEIGHT * 1 / 4, 100, 32};
+    SDL_FRect startButtonRect = {((float)WINDOW_WIDTH - 100) / 2, (float)WINDOW_HEIGHT * 1 / 4, 100, 32};
     startButton = new Button(renderer, "Start", startButtonRect);
-    SDL_FRect exitButtonRect = {(WINDOW_WIDTH - 100) / 2, WINDOW_HEIGHT * 2 / 4, 100, 32};
+    SDL_FRect exitButtonRect = {((float)WINDOW_WIDTH - 100) / 2, (float)WINDOW_HEIGHT * 2 / 4, 100, 32};
     exitButton = new Button(renderer, "Exit", exitButtonRect);
     SDL_FRect backButtonRect = {WINDOW_WIDTH - 100 - 10, WINDOW_HEIGHT - 32 - 10, 100, 32};
     backButton = new Button(renderer, "Back", backButtonRect);
+    SDL_FRect srcRect = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
+    SDL_FRect dstRect = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
+    frame0Background = new ImageShow("res/start.jpg", renderer, srcRect, dstRect);
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
@@ -80,14 +86,18 @@ SDL_AppResult SDL_AppIterate(void *appstate)
             /* as you can see from this, rendering draws over whatever was drawn before it. */
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  /* black, full alpha */
             SDL_RenderClear(renderer);  /* start with a blank canvas. */
+            frame0Background->update();
             startButton->update();
             exitButton->update();
+            backButton->setHide(true);
             break;
         case 1:
             /* as you can see from this, rendering draws over whatever was drawn before it. */
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);  /* white, full alpha */
             SDL_RenderClear(renderer);  /* start with a blank canvas. */
             backButton->update();
+            startButton->setHide(true);
+            exitButton->setHide(true);
             break;
         default:
             frameCount = 1;
@@ -104,5 +114,6 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
 {
     delete startButton;
     delete exitButton;
+    delete backButton;
     /* SDL will clean up the window/renderer for us. */
 }

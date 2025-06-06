@@ -10,12 +10,14 @@ public:
     bool isClicked(const SDL_FPoint& mousePosition);
     void modifyText(const std::string& newText);
     void update();
+    void setHide(bool hide);
     ~Button();
 
 private:
     SDL_Renderer* renderer;
     std::string text;
     SDL_FRect background;
+    bool hide;
 };
 
 #endif
