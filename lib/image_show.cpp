@@ -34,3 +34,36 @@ void ImageShow::update() {
     }
     // SDL_RenderPresent(this->renderer);
 }
+
+void ImageShow::updateMulti(SDL_FRect dstRect[], uint16_t len) {
+    float width, height;
+    if (SDL_GetTextureSize(this->texture, &width, &height) == false) {
+        SDL_Log("Failed to get texture size: %s. W=%f, H=%f\n", SDL_GetError(), width, height);
+    } else {
+        this->srcRect.w = width;
+        this->srcRect.h = height;
+    }
+    /* Display the image */
+    for (int i = 0; i < len; i++) {
+        if (SDL_RenderTexture(this->renderer, this->texture, &this->srcRect, &dstRect[i]) == false) {
+            printf("Failed to render texture: %s\n", SDL_GetError());
+        }
+    }
+    // SDL_RenderPresent(this->renderer);
+}
+
+void ImageShow::leftMove() {
+    this->dstRect.x -= 10;
+}
+
+void ImageShow::upMove() {
+    this->dstRect.y -= 10;
+}
+
+void ImageShow::downMove() {
+    this->dstRect.y += 10;
+}
+
+void ImageShow::rightMove() {
+    this->dstRect.x += 10;
+}

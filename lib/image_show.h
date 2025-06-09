@@ -2,13 +2,18 @@
 #define IMAGE_SHOW_H
 #include <SDL3/SDL_rect.h>
 #include <SDL3/SDL.h>
+#include <cstdint>
 #include <iostream>
 
 class ImageShow {
 public:
     ImageShow(std::string fileName, SDL_Renderer* renderer, SDL_FRect srcRect, SDL_FRect dstRect);
     void update();
-
+    void updateMulti(SDL_FRect dstRect[], uint16_t len);
+    void leftMove();
+    void rightMove();
+    void upMove();
+    void downMove();
     ~ImageShow();
 
 private:
