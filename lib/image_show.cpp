@@ -1,6 +1,7 @@
 #include "image_show.h"
 #include <SDL3/SDL_log.h>
 #include <SDL3/SDL_oldnames.h>
+#include <SDL3/SDL_rect.h>
 #include <sys/types.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3_image/SDL_image.h>
@@ -31,6 +32,27 @@ void ImageShow::update() {
     /* Display the image */
     if (SDL_RenderTexture(this->renderer, this->texture, &this->srcRect, &this->dstRect) == false) {
         printf("Failed to render texture: %s\n", SDL_GetError());
+    }
+    // SDL_RenderPresent(this->renderer);
+}
+
+void ImageShow::update(SDL_FRect* dstRect) {
+    float width, height;
+    if (SDL_GetTextureSize(this->texture, &width, &height) == false) {
+        SDL_Log("Failed to get texture size: %s. W=%f, H=%f\n", SDL_GetError(), width, height);
+    } else {
+        this->srcRect.w = width;
+        this->srcRect.h = height;
+    }
+    /* Display the image */
+    if (dstRect != NULL) {
+        if (SDL_RenderTexture(this->renderer, this->texture, &this->srcRect, dstRect) == false) {
+            printf("Failed to render texture: %s\n", SDL_GetError());
+        }
+    } else {
+        if (SDL_RenderTexture(this->renderer, this->texture, &this->srcRect, &this->dstRect) == false) {
+            printf("Failed to render texture: %s\n", SDL_GetError());
+        }
     }
     // SDL_RenderPresent(this->renderer);
 }

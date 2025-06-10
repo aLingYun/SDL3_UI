@@ -4,17 +4,59 @@
  *
  * This code is public domain. Feel free to use it for any purpose!
  */
+#define SDL_MAIN_USE_CALLBACKS 1  /* use the callbacks instead of main() */
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_keycode.h>
 #include <SDL3/SDL_log.h>
 #include <SDL3/SDL_oldnames.h>
 #include <SDL3/SDL_rect.h>
+#include <SDL3/SDL_render.h>
+#include <SDL3/SDL_video.h>
 #include <cstdint>
-#define SDL_MAIN_USE_CALLBACKS 1  /* use the callbacks instead of main() */
+#include <string>
+#include <sys/types.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include "lib/button.h"
 #include "lib/image_show.h"
+
+#define WINDOW_WIDTH 1400
+#define WINDOW_HEIGHT 900
+#define TANK_SIZE 50
+
+class GameMap {
+public:
+    GameMap(SDL_Renderer* renderer, ImageShow* picture) {
+        this->renderer = renderer;
+        for (int x = 0; x < WINDOW_WIDTH/TANK_SIZE; x++) {
+            for (int y = 0; y < WINDOW_HEIGHT/TANK_SIZE; y++) {
+                this->picture[x][y] = picture;
+            }
+        }
+    }
+
+    void setFromConfigFile(std::string configFile) {
+
+    }
+    void show() {
+        for (int x = 0; x < WINDOW_WIDTH/TANK_SIZE; x++) {
+            for (int y = 0; y < WINDOW_HEIGHT/TANK_SIZE; y++) {
+                SDL_FRect tmp_rect = {x * (float)TANK_SIZE, y * (float)TANK_SIZE, TANK_SIZE, TANK_SIZE};
+                if (this->picture[x][y] == NULL) {
+                    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+                    SDL_RenderFillRect(renderer, &tmp_rect);
+                } else {
+                    this->picture[x][y]->update(&tmp_rect);
+                }
+            }
+        }
+    }
+
+private:
+    SDL_Renderer* renderer;
+    ImageShow* picture[WINDOW_WIDTH/TANK_SIZE][WINDOW_HEIGHT/TANK_SIZE];
+};
+
 
 /* We will use this renderer to draw into this window every frame. */
 static SDL_Window *window = NULL;
@@ -24,13 +66,11 @@ static Button *exitButton = NULL;
 static Button *backButton = NULL;
 static uint16_t frameCount = 0;
 
-#define WINDOW_WIDTH 1920
-#define WINDOW_HEIGHT 1080
-#define TANK_SIZE 48
-
 static ImageShow* frame0Background = NULL;
 static ImageShow* frame1Tank = NULL;
 static ImageShow* frame1Wall = NULL;
+
+static GameMap* gameMap = NULL;
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
@@ -62,6 +102,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     srcRect = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
     dstRect = {(float)(WINDOW_WIDTH - 4*TANK_SIZE) / 2, WINDOW_HEIGHT - TANK_SIZE, TANK_SIZE, TANK_SIZE};
     frame1Wall = new ImageShow("res/wall.png", renderer, srcRect, dstRect);
+    gameMap = new GameMap(renderer, frame1Tank);
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
@@ -123,6 +164,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         case 1:
             startButton->setHide(true);
             exitButton->setHide(true);
+            gameMap->show();
             SDL_FRect wallDstRects[8];
             wallDstRects[0] = {(float)(WINDOW_WIDTH - 4*TANK_SIZE) / 2, WINDOW_HEIGHT - TANK_SIZE, TANK_SIZE, TANK_SIZE};
             wallDstRects[1] = {(float)(WINDOW_WIDTH - 4*TANK_SIZE) / 2, WINDOW_HEIGHT - 2*TANK_SIZE, TANK_SIZE, TANK_SIZE};
@@ -152,5 +194,11 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
     delete startButton;
     delete exitButton;
     delete backButton;
+    delete frame1Wall;
+    delete frame1Tank;
+    delete frame0Background;
+    delete gameMap;
+    SDL_DestroyWindow(window);
+    SDL_DestroyRenderer(renderer);
     /* SDL will clean up the window/renderer for us. */
 }
