@@ -36,7 +36,7 @@ void ImageShow::update() {
     // SDL_RenderPresent(this->renderer);
 }
 
-void ImageShow::update(SDL_FRect* dstRect) {
+void ImageShow::update(SDL_FRect* tmpDstRect) {
     float width, height;
     if (SDL_GetTextureSize(this->texture, &width, &height) == false) {
         SDL_Log("Failed to get texture size: %s. W=%f, H=%f\n", SDL_GetError(), width, height);
@@ -45,8 +45,8 @@ void ImageShow::update(SDL_FRect* dstRect) {
         this->srcRect.h = height;
     }
     /* Display the image */
-    if (dstRect != NULL) {
-        if (SDL_RenderTexture(this->renderer, this->texture, &this->srcRect, dstRect) == false) {
+    if (tmpDstRect != NULL) {
+        if (SDL_RenderTexture(this->renderer, this->texture, &this->srcRect, tmpDstRect) == false) {
             printf("Failed to render texture: %s\n", SDL_GetError());
         }
     } else {

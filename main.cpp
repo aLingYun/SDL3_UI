@@ -12,8 +12,14 @@
 #include <SDL3/SDL_rect.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_video.h>
+#include <SDL3/SDL_log.h>
 #include <cstdint>
 #include <string>
+// #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <vector>
 #include <sys/types.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
@@ -28,19 +34,56 @@ class GameMap {
 public:
     GameMap(SDL_Renderer* renderer, ImageShow* picture) {
         this->renderer = renderer;
-        for (int x = 0; x < WINDOW_WIDTH/TANK_SIZE; x++) {
-            for (int y = 0; y < WINDOW_HEIGHT/TANK_SIZE; y++) {
+        for (int y = 0; y < WINDOW_HEIGHT/TANK_SIZE; y++) {
+            for (int x = 0; x < WINDOW_WIDTH/TANK_SIZE; x++) {
                 this->picture[x][y] = picture;
             }
         }
     }
 
     void setFromConfigFile(std::string configFile) {
-
-    }
-    void show() {
-        for (int x = 0; x < WINDOW_WIDTH/TANK_SIZE; x++) {
+        std::ifstream infile(configFile);
+        std::string line;
+        std::vector<std::string> fields;
+        // getline(infile, line);
+        while (getline(infile, line))
+        {
+            std::istringstream sin(line);
+            std::string field;
+            while (getline(sin, field, ','))
+            {
+                fields.push_back(field);
+            }
+        }
+        // std::cout << "fields.size: " << fields[1] << std::endl;
+        if (fields.size() == ((WINDOW_WIDTH / TANK_SIZE) * (WINDOW_HEIGHT / TANK_SIZE))) {
             for (int y = 0; y < WINDOW_HEIGHT/TANK_SIZE; y++) {
+                for (int x = 0; x < WINDOW_WIDTH/TANK_SIZE; x++) {
+                    SDL_FRect tmp_rect = {0, 0, 0, 0};
+                    switch (fields[y * (WINDOW_WIDTH/TANK_SIZE) + x][0]) {
+                        case '0':
+                            this->picture[x][y] = NULL;
+                            break;
+                        case '1':
+                            this->picture[x][y] = new ImageShow("res/1.png", renderer, tmp_rect, tmp_rect);
+                            break;
+                        case '2':
+                            this->picture[x][y] = new ImageShow("res/2.png", renderer, tmp_rect, tmp_rect);
+                            break;
+                        default:
+                            this->picture[x][y] = NULL;
+                            break;
+                    }
+                }
+            }
+        } else {
+            std::cout << "config file error!" << std::endl;
+        }
+    }
+
+    void show() {
+        for (int y = 0; y < WINDOW_HEIGHT/TANK_SIZE; y++) {
+            for (int x = 0; x < WINDOW_WIDTH/TANK_SIZE; x++) {
                 SDL_FRect tmp_rect = {x * (float)TANK_SIZE, y * (float)TANK_SIZE, TANK_SIZE, TANK_SIZE};
                 if (this->picture[x][y] == NULL) {
                     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -102,7 +145,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     srcRect = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
     dstRect = {(float)(WINDOW_WIDTH - 4*TANK_SIZE) / 2, WINDOW_HEIGHT - TANK_SIZE, TANK_SIZE, TANK_SIZE};
     frame1Wall = new ImageShow("res/wall.png", renderer, srcRect, dstRect);
-    gameMap = new GameMap(renderer, frame1Tank);
+    gameMap = new GameMap(renderer, NULL);
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
@@ -164,6 +207,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         case 1:
             startButton->setHide(true);
             exitButton->setHide(true);
+            gameMap->setFromConfigFile("config/1.csv");
             gameMap->show();
             SDL_FRect wallDstRects[8];
             wallDstRects[0] = {(float)(WINDOW_WIDTH - 4*TANK_SIZE) / 2, WINDOW_HEIGHT - TANK_SIZE, TANK_SIZE, TANK_SIZE};
