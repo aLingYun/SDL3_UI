@@ -4,6 +4,7 @@
  *
  * This code is public domain. Feel free to use it for any purpose!
  */
+#include <iostream>
 #define SDL_MAIN_USE_CALLBACKS 1  /* use the callbacks instead of main() */
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_keycode.h>
@@ -16,6 +17,7 @@
 #include <cstdint>
 #include <string>
 // #include <iostream>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -39,6 +41,14 @@ public:
                 this->picture[x][y] = picture;
             }
         }
+        SDL_FRect tmp_rect = {0, 0, 0, 0};
+        std::string folderPath = "res/level"; // 替换为你的文件夹路径
+        for (const auto& entry : std::filesystem::directory_iterator(folderPath)) {
+            if (entry.is_regular_file()) {
+                std::cout << "Loading image: " << entry.path().string() << std::endl;
+                origin_picture.push_back(new ImageShow(entry.path().string(), renderer, tmp_rect, tmp_rect));
+            }
+        }
     }
 
     void setFromConfigFile(std::string configFile) {
@@ -59,21 +69,9 @@ public:
         if (fields.size() == ((WINDOW_WIDTH / TANK_SIZE) * (WINDOW_HEIGHT / TANK_SIZE))) {
             for (int y = 0; y < WINDOW_HEIGHT/TANK_SIZE; y++) {
                 for (int x = 0; x < WINDOW_WIDTH/TANK_SIZE; x++) {
-                    SDL_FRect tmp_rect = {0, 0, 0, 0};
-                    switch (fields[y * (WINDOW_WIDTH/TANK_SIZE) + x][0]) {
-                        case '0':
-                            this->picture[x][y] = NULL;
-                            break;
-                        case '1':
-                            this->picture[x][y] = new ImageShow("res/1.png", renderer, tmp_rect, tmp_rect);
-                            break;
-                        case '2':
-                            this->picture[x][y] = new ImageShow("res/2.png", renderer, tmp_rect, tmp_rect);
-                            break;
-                        default:
-                            this->picture[x][y] = NULL;
-                            break;
-                    }
+                    uint8_t res_idx = fields[y * (WINDOW_WIDTH/TANK_SIZE) + x][0] - '0';
+                    if (res_idx == 0) continue;
+                    this->picture[x][y] = this->origin_picture.at(res_idx - 1);
                 }
             }
         } else {
@@ -97,6 +95,7 @@ public:
 
 private:
     SDL_Renderer* renderer;
+    std::vector<ImageShow*> origin_picture;
     ImageShow* picture[WINDOW_WIDTH/TANK_SIZE][WINDOW_HEIGHT/TANK_SIZE];
 };
 
@@ -111,7 +110,6 @@ static uint16_t frameCount = 0;
 
 static ImageShow* frame0Background = NULL;
 static ImageShow* frame1Tank = NULL;
-static ImageShow* frame1Wall = NULL;
 
 static GameMap* gameMap = NULL;
 
@@ -142,9 +140,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     srcRect = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
     dstRect = {(float)(WINDOW_WIDTH - 4*TANK_SIZE) / 2 - TANK_SIZE, WINDOW_HEIGHT - TANK_SIZE, TANK_SIZE, TANK_SIZE};
     frame1Tank = new ImageShow("res/tank_1.png", renderer, srcRect, dstRect);
-    srcRect = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
-    dstRect = {(float)(WINDOW_WIDTH - 4*TANK_SIZE) / 2, WINDOW_HEIGHT - TANK_SIZE, TANK_SIZE, TANK_SIZE};
-    frame1Wall = new ImageShow("res/wall.png", renderer, srcRect, dstRect);
     gameMap = new GameMap(renderer, NULL);
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
@@ -209,16 +204,6 @@ SDL_AppResult SDL_AppIterate(void *appstate)
             exitButton->setHide(true);
             gameMap->setFromConfigFile("config/1.csv");
             gameMap->show();
-            SDL_FRect wallDstRects[8];
-            wallDstRects[0] = {(float)(WINDOW_WIDTH - 4*TANK_SIZE) / 2, WINDOW_HEIGHT - TANK_SIZE, TANK_SIZE, TANK_SIZE};
-            wallDstRects[1] = {(float)(WINDOW_WIDTH - 4*TANK_SIZE) / 2, WINDOW_HEIGHT - 2*TANK_SIZE, TANK_SIZE, TANK_SIZE};
-            wallDstRects[2] = {(float)(WINDOW_WIDTH - 4*TANK_SIZE) / 2, WINDOW_HEIGHT - 3*TANK_SIZE, TANK_SIZE, TANK_SIZE};
-            wallDstRects[3] = {(float)(WINDOW_WIDTH - 4*TANK_SIZE) / 2 + TANK_SIZE, WINDOW_HEIGHT - 3*TANK_SIZE, TANK_SIZE, TANK_SIZE};
-            wallDstRects[4] = {(float)(WINDOW_WIDTH - 4*TANK_SIZE) / 2 + 2*TANK_SIZE, WINDOW_HEIGHT - 3*TANK_SIZE, TANK_SIZE, TANK_SIZE};
-            wallDstRects[5] = {(float)(WINDOW_WIDTH - 4*TANK_SIZE) / 2 + 3*TANK_SIZE, WINDOW_HEIGHT - 3*TANK_SIZE, TANK_SIZE, TANK_SIZE};
-            wallDstRects[6] = {(float)(WINDOW_WIDTH - 4*TANK_SIZE) / 2 + 3*TANK_SIZE, WINDOW_HEIGHT - 2*TANK_SIZE, TANK_SIZE, TANK_SIZE};
-            wallDstRects[7] = {(float)(WINDOW_WIDTH - 4*TANK_SIZE) / 2 + 3*TANK_SIZE, WINDOW_HEIGHT - TANK_SIZE, TANK_SIZE, TANK_SIZE};
-            frame1Wall->updateMulti(wallDstRects, sizeof(wallDstRects) / sizeof(SDL_FRect));
             backButton->update();
             frame1Tank->update();
             break;
@@ -238,7 +223,6 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
     delete startButton;
     delete exitButton;
     delete backButton;
-    delete frame1Wall;
     delete frame1Tank;
     delete frame0Background;
     delete gameMap;
